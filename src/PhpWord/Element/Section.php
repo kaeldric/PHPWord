@@ -17,7 +17,6 @@
 
 namespace PhpOffice\PhpWord\Element;
 
-use PhpOffice\PhpWord\ComplexType\FootnoteProperties;
 use PhpOffice\PhpWord\Style\Section as SectionStyle;
 
 class Section extends AbstractContainer
@@ -47,13 +46,6 @@ class Section extends AbstractContainer
      * @var Footer[]
      */
     private $footers = array();
-
-    /**
-     * The properties for the footnote of this section
-     * 
-     * @var FootnoteProperties
-     */
-    private $footnoteProperties;
 
     /**
      * Create new instance
@@ -144,26 +136,6 @@ class Section extends AbstractContainer
     public function getFooters()
     {
         return $this->footers;
-    }
-
-    /**
-     * Get the footnote properties
-     * 
-     * @return \PhpOffice\PhpWord\Element\FooterProperties
-     */
-    public function getFootnotePropoperties()
-    {
-        return $this->footnoteProperties;
-    }
-
-    /**
-     * Set the footnote properties
-     * 
-     * @param FootnoteProperties $footnoteProperties
-     */
-    public function setFootnoteProperties(FootnoteProperties $footnoteProperties = null)
-    {
-        $this->footnoteProperties = $footnoteProperties;
     }
 
     /**

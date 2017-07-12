@@ -18,7 +18,6 @@
 namespace PhpOffice\PhpWord\Style;
 
 use PhpOffice\PhpWord\SimpleType\Jc;
-use PhpOffice\PhpWord\SimpleType\NumberFormat;
 
 /**
  * Numbering level definition
@@ -44,7 +43,7 @@ class NumberingLevel extends AbstractStyle
     private $start = 1;
 
     /**
-     * Numbering format w:numFmt, one of PhpOffice\PhpWord\SimpleType\NumberFormat
+     * Numbering format bullet|decimal|upperRoman|lowerRoman|upperLetter|lowerLetter
      *
      * @var string
      * @link http://www.schemacentral.com/sc/ooxml/t-w_ST_NumberFormat.html
@@ -68,7 +67,7 @@ class NumberingLevel extends AbstractStyle
     private $pStyle;
 
     /**
-     * Content between numbering symbol and paragraph text w:suff
+     * Content between numbering symbol and paragraph text
      *
      * @var string tab|space|nothing
      * @link http://www.schemacentral.com/sc/ooxml/e-w_suff-1.html
@@ -84,9 +83,7 @@ class NumberingLevel extends AbstractStyle
     private $text;
 
     /**
-     * Justification, w:lvlJc
-     * 
-     * @var string, one of PhpOffice\PhpWord\SimpleType\Jc
+     * @var string
      */
     private $alignment = '';
 
@@ -188,12 +185,13 @@ class NumberingLevel extends AbstractStyle
      */
     public function setFormat($value)
     {
-        $this->format = $this->setEnumVal($value, NumberFormat::values(), $this->format);
+        $enum = array('bullet', 'decimal', 'upperRoman', 'lowerRoman', 'upperLetter', 'lowerLetter');
+        $this->format = $this->setEnumVal($value, $enum, $this->format);
         return $this;
     }
 
     /**
-     * Get restart
+     * Get start
      *
      * @return integer
      */
@@ -203,7 +201,7 @@ class NumberingLevel extends AbstractStyle
     }
 
     /**
-     * Set restart
+     * Set start
      *
      * @param integer $value
      * @return self

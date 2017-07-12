@@ -19,7 +19,6 @@ namespace PhpOffice\PhpWord\Writer\Word2007\Part;
 use PhpOffice\PhpWord\PhpWord;
 use PhpOffice\PhpWord\SimpleType\Jc;
 use PhpOffice\PhpWord\TestHelperDOCX;
-use PhpOffice\PhpWord\SimpleType\NumberFormat;
 
 /**
  * Test class for PhpOffice\PhpWord\Writer\Word2007\Part\Numbering
@@ -53,7 +52,7 @@ class NumberingTest extends \PHPUnit_Framework_TestCase
                 'levels' => array(
                     array(
                         'start'     => 1,
-                        'format'    => NumberFormat::DECIMAL,
+                        'format'    => 'decimal',
                         'restart'   => 1,
                         'suffix'    => 'space',
                         'text'      => '%1.',

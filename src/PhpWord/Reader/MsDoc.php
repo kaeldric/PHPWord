@@ -19,7 +19,6 @@ namespace PhpOffice\PhpWord\Reader;
 
 use PhpOffice\Common\Drawing;
 use PhpOffice\PhpWord\PhpWord;
-use PhpOffice\PhpWord\Style;
 use PhpOffice\PhpWord\Shared\OLERead;
 
 /**

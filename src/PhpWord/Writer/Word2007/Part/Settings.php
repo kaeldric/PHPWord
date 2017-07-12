@@ -17,10 +17,6 @@
 
 namespace PhpOffice\PhpWord\Writer\Word2007\Part;
 
-use PhpOffice\PhpWord\Settings as DocumentSettings;
-use PhpOffice\PhpWord\ComplexType\ProofState;
-use PhpOffice\PhpWord\ComplexType\TrackChangesView;
-
 /**
  * Word2007 settings part writer: word/settings.xml
  *
@@ -101,19 +97,16 @@ class Settings extends AbstractPart
      */
     private function getSettings()
     {
-
-        /** @var \PhpOffice\PhpWord\Metadata\Settings $documentSettings */
-        $documentSettings = $this->getParentWriter()->getPhpWord()->getSettings();
-
         // Default settings
         $this->settings = array(
+            'w:zoom' => array('@attributes' => array('w:percent' => '100')),
             'w:defaultTabStop' => array('@attributes' => array('w:val' => '708')),
             'w:hyphenationZone' => array('@attributes' => array('w:val' => '425')),
             'w:characterSpacingControl' => array('@attributes' => array('w:val' => 'doNotCompress')),
             'w:themeFontLang' => array('@attributes' => array('w:val' => 'en-US')),
-            'w:decimalSymbol' => array('@attributes' => array('w:val' => $documentSettings->getDecimalSymbol())),
+            'w:decimalSymbol' => array('@attributes' => array('w:val' => '.')),
             'w:listSeparator' => array('@attributes' => array('w:val' => ';')),
-            'w:compat' => array(),
+            'w:compat' => '',
             'm:mathPr' => array(
                 'm:mathFont' => array('@attributes' => array('m:val' => 'Cambria Math')),
                 'm:brkBin' => array('@attributes' => array('m:val' => 'before')),
@@ -145,101 +138,26 @@ class Settings extends AbstractPart
             ),
         );
 
-        $this->setOnOffValue('w:hideSpellingErrors', $documentSettings->hasHideSpellingErrors());
-        $this->setOnOffValue('w:hideGrammaticalErrors', $documentSettings->hasHideGrammaticalErrors());
-        $this->setOnOffValue('w:trackRevisions', $documentSettings->hasTrackRevisions());
-        $this->setOnOffValue('w:doNotTrackMoves', $documentSettings->hasDoNotTrackMoves());
-        $this->setOnOffValue('w:doNotTrackFormatting', $documentSettings->hasDoNotTrackFormatting());
-        $this->setOnOffValue('w:evenAndOddHeaders', $documentSettings->hasEvenAndOddHeaders());
-
-        $this->setRevisionView($documentSettings->getRevisionView());
-        $this->setDocumentProtection($documentSettings->getDocumentProtection());
-        $this->setProofState($documentSettings->getProofState());
-        $this->setZoom($documentSettings->getZoom());
+        // Other settings
+        $this->getProtection();
         $this->getCompatibility();
-    }
-
-    /**
-     * Adds a boolean attribute to the settings array
-     * 
-     * @param string $settingName
-     * @param boolean $booleanValue
-     */
-    private function setOnOffValue($settingName, $booleanValue)
-    {
-        if ($booleanValue !== null && is_bool($booleanValue)) {
-            if ($booleanValue) {
-                $this->settings[$settingName] = array('@attributes' => array());
-            } else {
-                $this->settings[$settingName] = array('@attributes' => array('w:val' => 'false'));
-            }
-        }
     }
 
     /**
      * Get protection settings.
      *
-     * @param \PhpOffice\PhpWord\Metadata\Settings $documentProtection
      * @return void
      */
-    private function setDocumentProtection($documentProtection)
+    private function getProtection()
     {
-        if ($documentProtection != null && $documentProtection->getEditing() !== null) {
+        $protection = $this->getParentWriter()->getPhpWord()->getProtection();
+        if ($protection->getEditing() !== null) {
             $this->settings['w:documentProtection'] = array(
                 '@attributes' => array(
                     'w:enforcement' => 1,
-                    'w:edit' => $documentProtection->getEditing(),
+                    'w:edit' => $protection->getEditing(),
                 )
             );
-        }
-    }
-
-    /**
-     * Set the Proof state
-     *
-     * @param ProofState $proofState
-     */
-    private function setProofState(ProofState $proofState = null)
-    {
-        if ($proofState != null && $proofState->getGrammar() !== null && $proofState->getSpelling() !== null) {
-            $this->settings['w:proofState'] = array(
-                '@attributes' => array(
-                    'w:spelling' => $proofState->getSpelling(),
-                    'w:grammar' => $proofState->getGrammar()
-                )
-            );
-        }
-    }
-
-    /**
-     * Set the Proof state
-     *
-     * @param ProofState $proofState
-     */
-    private function setRevisionView(TrackChangesView $trackChangesView = null)
-    {
-        if ($trackChangesView != null) {
-
-            $revisionView['w:markup'] = $trackChangesView->hasMarkup() ? 'true': 'false';
-            $revisionView['w:comments'] = $trackChangesView->hasComments() ? 'true': 'false';
-            $revisionView['w:insDel'] = $trackChangesView->hasInsDel() ? 'true': 'false';
-            $revisionView['w:formatting'] = $trackChangesView->hasFormatting() ? 'true': 'false';
-            $revisionView['w:inkAnnotations'] = $trackChangesView->hasInkAnnotations() ? 'true': 'false';
-
-            $this->settings['w:revisionView'] = array('@attributes' => $revisionView);
-        }
-    }
-
-    /**
-     * Set the magnification
-     * 
-     * @param mixed $zoom
-     */
-    private function setZoom($zoom = null)
-    {
-        if ($zoom !== null) {
-            $attr = is_int($zoom) ? 'w:percent' : 'w:val';
-            $this->settings['w:zoom'] = array('@attributes' => array($attr => $zoom));
         }
     }
 

@@ -55,7 +55,6 @@ class Word2007 extends AbstractReader implements ReaderInterface
             array('stepPart' => 'document', 'stepItems' => array(
                 'endnotes'  => 'Endnotes',
                 'footnotes' => 'Footnotes',
-                'settings' => 'Settings',
             )),
         );
 

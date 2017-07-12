@@ -51,7 +51,6 @@ class Object extends AbstractElement
             $xmlWriter->startElement('w:p');
             $styleWriter->writeAlignment();
         }
-        $this->writeCommentRangeStart();
 
         $xmlWriter->startElement('w:r');
         $xmlWriter->startElement('w:object');

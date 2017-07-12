@@ -58,7 +58,7 @@ abstract class AbstractContainer extends AbstractElement
     protected $elements = array();
 
     /**
-     * Container type Section|Header|Footer|Footnote|Endnote|Cell|TextRun|TextBox|ListItemRun|TrackChange
+     * Container type Section|Header|Footer|Footnote|Endnote|Cell|TextRun|TextBox|ListItemRun
      *
      * @var string
      */
@@ -83,7 +83,7 @@ abstract class AbstractContainer extends AbstractElement
             'ListItem', 'ListItemRun', 'Table', 'Image', 'Object',
             'Footnote', 'Endnote', 'CheckBox', 'TextBox', 'Field',
             'Line', 'Shape', 'Title', 'TOC', 'PageBreak',
-            'Chart', 'FormField', 'SDT', 'Comment'
+            'Chart', 'FormField', 'SDT'
         );
         $functions = array();
         foreach ($elements as $element) {
@@ -188,7 +188,7 @@ abstract class AbstractContainer extends AbstractElement
     private function checkValidity($method)
     {
         $generalContainers = array(
-            'Section', 'Header', 'Footer', 'Footnote', 'Endnote', 'Cell', 'TextRun', 'TextBox', 'ListItemRun', 'TrackChange',
+            'Section', 'Header', 'Footer', 'Footnote', 'Endnote', 'Cell', 'TextRun', 'TextBox', 'ListItemRun',
         );
 
         $validContainers = array(
@@ -203,8 +203,7 @@ abstract class AbstractContainer extends AbstractElement
             'Shape'         => $generalContainers,
             'FormField'     => $generalContainers,
             'SDT'           => $generalContainers,
-            'TrackChange'   => $generalContainers,
-            'TextRun'       => array('Section', 'Header', 'Footer', 'Cell', 'TextBox', 'TrackChange'),
+            'TextRun'       => array('Section', 'Header', 'Footer', 'Cell', 'TextBox'),
             'ListItem'      => array('Section', 'Header', 'Footer', 'Cell', 'TextBox'),
             'ListItemRun'   => array('Section', 'Header', 'Footer', 'Cell', 'TextBox'),
             'Table'         => array('Section', 'Header', 'Footer', 'Cell', 'TextBox'),
@@ -212,7 +211,7 @@ abstract class AbstractContainer extends AbstractElement
             'TextBox'       => array('Section', 'Header', 'Footer', 'Cell'),
             'Footnote'      => array('Section', 'TextRun', 'Cell'),
             'Endnote'       => array('Section', 'TextRun', 'Cell'),
-            'PreserveText'  => array('Section', 'Header', 'Footer', 'Cell'),
+            'PreserveText'  => array('Header', 'Footer', 'Cell'),
             'Title'         => array('Section'),
             'TOC'           => array('Section'),
             'PageBreak'     => array('Section'),

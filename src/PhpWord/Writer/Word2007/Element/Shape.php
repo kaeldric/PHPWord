@@ -55,7 +55,6 @@ class Shape extends AbstractElement
         if (!$this->withoutP) {
             $xmlWriter->startElement('w:p');
         }
-        $this->writeCommentRangeStart();
 
         $xmlWriter->startElement('w:r');
         $xmlWriter->startElement('w:pict');
