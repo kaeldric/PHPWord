@@ -26,6 +26,19 @@ use PhpOffice\PhpWord\Element\AbstractContainer;
  */
 class Html
 {
+    private static $sharedTextRun = null; // TextRun used for multiple span/text consecutive elements
+    private static $styleOnlyNodes = ['div', 'span']; // Style only containers
+    private static $styleDefaults = [
+            'font' => [],
+            'list' => [],
+            'paragraph' => [
+                'spaceBefore' => 0,
+                'spaceAfter' => 0,
+                'lineHeight ' => 1,
+                'keepLines' => false
+            ]
+        ];
+    
     /**
      * Add HTML parts.
      *
@@ -51,7 +64,7 @@ class Html
         $html = str_replace('&', '&amp;', $html);
         $html = str_replace(array('_lt_', '_gt_', '_amp_'), array('&lt;', '&gt;', '&amp;'), $html);
 
-        if (false === $fullHTML) {
+        if ($fullHTML === false) {
             $html = '<body>' . $html . '</body>';
         }
 
@@ -63,6 +76,18 @@ class Html
 
         self::parseNode($node->item(0), $element);
     }
+    
+    /**
+     * Unisce gli stili passati con quelli di default, sovrascrivendoli se necessario
+     * @param array $newStyles i nuovi stili (nei sotto-array font, paragraph e list)
+     */
+    public static function overrideDefaultStyles($newStyles){
+        foreach ($newStyles as $styleType => $styleValue){
+            if (isset(self::$styleDefaults[$styleType])){
+                array_merge(self::$styleDefaults[$styleType], $styleValue);
+            }
+        }
+    }
 
     /**
      * parse Inline style of a node
@@ -73,13 +98,16 @@ class Html
      */
     protected static function parseInlineStyle($node, $styles = array())
     {
-        if (XML_ELEMENT_NODE == $node->nodeType) {
+        if ($node->nodeType == XML_ELEMENT_NODE) {
             $attributes = $node->attributes; // get all the attributes(eg: id, class)
-
+            
             foreach ($attributes as $attribute) {
                 switch ($attribute->name) {
                     case 'style':
                         $styles = self::parseStyle($attribute, $styles);
+                        break;
+                    case 'class':
+                        $styles = self::parseClassStyle($attribute, $styles);
                         break;
                 }
             }
@@ -98,12 +126,12 @@ class Html
      * @return void
      */
     protected static function parseNode($node, $element, $styles = array(), $data = array())
-    {
+    {        
         // Populate styles array
         $styleTypes = array('font', 'paragraph', 'list');
         foreach ($styleTypes as $styleType) {
             if (!isset($styles[$styleType])) {
-                $styles[$styleType] = array();
+                $styles[$styleType] = self::$styleDefaults[$styleType];
             }
         }
 
@@ -111,6 +139,7 @@ class Html
         $nodes = array(
                               // $method        $node   $element    $styles     $data   $argument1      $argument2
             'p'         => array('Paragraph',   $node,  $element,   $styles,    null,   null,           null),
+            'font'      => array('Font',        $node,  $element,   $styles,    null,   null,           null),
             'h1'        => array('Heading',     null,   $element,   $styles,    null,   'Heading1',     null),
             'h2'        => array('Heading',     null,   $element,   $styles,    null,   'Heading2',     null),
             'h3'        => array('Heading',     null,   $element,   $styles,    null,   'Heading3',     null),
@@ -118,7 +147,9 @@ class Html
             'h5'        => array('Heading',     null,   $element,   $styles,    null,   'Heading5',     null),
             'h6'        => array('Heading',     null,   $element,   $styles,    null,   'Heading6',     null),
             '#text'     => array('Text',        $node,  $element,   $styles,    null,   null,           null),
+            'br'        => array('NewLine',     null,   $element,   $styles,    null,   null,           null),
             'strong'    => array('Property',    null,   null,       $styles,    null,   'bold',         true),
+            'u'         => array('Property',    null,   null,       $styles,    null,   'underline',    'single'),
             'em'        => array('Property',    null,   null,       $styles,    null,   'italic',       true),
             'sup'       => array('Property',    null,   null,       $styles,    null,   'superScript',  true),
             'sub'       => array('Property',    null,   null,       $styles,    null,   'subScript',    true),
@@ -132,7 +163,7 @@ class Html
 
         $newElement = null;
         $keys = array('node', 'element', 'styles', 'data', 'argument1', 'argument2');
-
+        
         if (isset($nodes[$node->nodeName])) {
             // Execute method based on node mapping table and return $newElement or null
             // Arguments are passed by reference
@@ -155,6 +186,10 @@ class Html
             }
         }
 
+//        if (in_array($node->nodeName, self::$styleOnlyNodes)) {
+            $styles = self::parseInlineStyle($node, $styles);
+//        }
+
         if ($newElement === null) {
             $newElement = $element;
         }
@@ -173,18 +208,28 @@ class Html
      */
     private static function parseChildNodes($node, $element, $styles, $data)
     {
-        if ('li' != $node->nodeName) {
-            $cNodes = $node->childNodes;
-            if (count($cNodes) > 0) {
-                foreach ($cNodes as $cNode) {
-                    if ($element instanceof AbstractContainer) {
-                        self::parseNode($cNode, $element, $styles, $data);
-                    }
-                }
+        
+        $cNodes = $node->childNodes;
+        
+        if ($node->nodeName === 'li' || count($cNodes) === 0) { return; }
+        
+        foreach ($cNodes as $cNode) {
+            if ( !($element instanceof AbstractContainer) ) { continue; }
+            
+            if ($element instanceof \PhpOffice\PhpWord\Element\TextRun){
+               $parentElement = $element; 
+            } else if (in_array($cNode->nodeName, ['span', '#text'])){        
+                self::$sharedTextRun = self::$sharedTextRun === null? $element->addTextRun($styles['paragraph']) : self::$sharedTextRun;
+                $parentElement = self::$sharedTextRun;
+            } else{
+                $parentElement = $element;
+                self::$sharedTextRun = null; // Last TextRun elements are over
             }
+            
+            self::parseNode($cNode, $parentElement, $styles, $data);
         }
     }
-
+    
     /**
      * Parse paragraph node
      *
@@ -195,10 +240,51 @@ class Html
      */
     private static function parseParagraph($node, $element, &$styles)
     {
+        if ($element instanceof \PhpOffice\PhpWord\Element\TextRun) {
+            $element->addTextBreak();
+            return $element;
+        }
+        
         $styles['paragraph'] = self::parseInlineStyle($node, $styles['paragraph']);
         $newElement = $element->addTextRun($styles['paragraph']);
 
         return $newElement;
+    }
+    
+    /**
+     * Parse new line
+     *
+     * @param \PhpOffice\PhpWord\Element\AbstractContainer $element
+     * @return \PhpOffice\PhpWord\Element\AbstractContainer
+     */
+    private static function parseNewLine($element)
+    {
+        $element->addTextBreak();
+
+        return $element;
+    }
+    
+    /**
+     * Parse font tag
+     *
+     * @param \DOMNode $node
+     * @param \PhpOffice\PhpWord\Element\AbstractContainer $element
+     * @param array &$styles
+     * @return \PhpOffice\PhpWord\Element\TextRun
+     */
+    private static function parseFont($node, $element, &$styles)
+    {
+        $attributes = $node->attributes; // get all the attributes(eg: id, class)
+        
+        foreach ($attributes as $attribute) {
+            switch ($attribute->name) {
+                case 'size':
+                    $styles['font']['size'] = self::calcFontSize($attribute->value);
+                    break;
+            }
+        }
+
+        return $element;
     }
 
     /**
@@ -237,7 +323,7 @@ class Html
         // if (method_exists($element, 'addText')) {
             $element->addText($node->nodeValue, $styles['font'], $styles['paragraph']);
         // }
-
+            
         return null;
     }
 
@@ -337,6 +423,39 @@ class Html
     }
 
     /**
+     * Parse class style
+     *
+     * @param \DOMAttr $attribute
+     * @param array $styles is supplied, the inline style attributes are added to the already existing style
+     * @return array
+     */
+    private static function parseClassStyle($attribute, $styles)
+    {
+        $classes = explode(' ', trim($attribute->value, " \t\n\r\0\x0B;"));
+        foreach ($classes as $class) {
+            switch ($class) {
+                case 'ql-font-times':
+                    $styles['font']['name'] = 'Times New Roman';
+                    break;
+                case 'ql-align-left':
+                    $styles['align'] = 'left';
+                    break;
+                case 'ql-align-center':
+                    $styles['align'] = 'center';
+                    break;
+                case 'ql-align-right':
+                    $styles['align'] = 'right';
+                    break;
+                case 'ql-align-justify':
+                    $styles['align'] = 'justify';
+                    break;
+
+            }
+        }
+        return $styles;
+    }
+
+    /**
      * Parse style
      *
      * @param \DOMAttr $attribute
@@ -353,25 +472,88 @@ class Html
                 case 'text-decoration':
                     switch ($cValue) {
                         case 'underline':
-                            $styles['underline'] = 'single';
+                            $styles['font']['underline'] = 'single';
                             break;
                         case 'line-through':
-                            $styles['strikethrough'] = true;
+                            $styles['font']['strikethrough'] = true;
                             break;
                     }
                     break;
                 case 'text-align':
-                    $styles['alignment'] = $cValue; // todo: any mapping?
+                    $styles['paragraph']['align'] = $cValue;
                     break;
                 case 'color':
-                    $styles['color'] = trim($cValue, "#");
+                    if (strpos($cValue, "rgb") === 0){
+                        // RGB color string
+                        $rgbString = str_replace(['rgb(', ')', 'rgba('], "", $cValue);
+                        $rgb = explode(",", $rgbString);
+                        $colorValue = sprintf('%02x', $rgb[0]) . sprintf('%02x', $rgb[1]) . sprintf('%02x', $rgb[2]);
+                    } else {
+                        $colorValue = trim($cValue, "#");
+                    }
+                    $styles['font']['color'] = $colorValue;
                     break;
                 case 'background-color':
-                    $styles['bgColor'] = trim($cValue, "#");
+                    if (strpos($cValue, "rgb") === 0){
+                        // RGB color string
+                        $rgbString = str_replace(['rgb(', ')', 'rgba('], "", $cValue);
+                        $rgb = explode(",", $rgbString);
+                        $colorValue = sprintf('%02x', $rgb[0]) . sprintf('%02x', $rgb[1]) . sprintf('%02x', $rgb[2]);
+                    } else {
+                        $colorValue = trim($cValue, "#");
+                    }
+                    $styles['font']['bgColor'] = $colorValue;
+                    break;
+                case 'font-weight':
+                    switch ($cValue) {
+                        case 'normal':
+                            break;
+                        default:
+                            $styles['font']['bold'] = true;
+                            break;
+                    }
+                    break;
+                case 'font-size':
+                    $styles['font']['size'] = self::calcFontSize($cValue);
                     break;
             }
         }
-
         return $styles;
+    }
+    private static function calcFontSize($fontSizeValue){
+        $intValues = [
+            1 => 8,
+            2 => 8,
+            3 => 11,
+            4 => 12,
+            5 => 14,
+            6 => 18,
+            7 => 24
+        ];
+        $stringValues = [
+            ''                  => 12,
+            '8pt'               => 8,
+            '11pt'              => 11,
+            '12pt'              => 12,
+            '14pt'              => 14,
+            '18pt'              => 18,
+            '24pt'              => 24,
+            'x-small'           => 8,
+            'small'             => 11,
+            'normal'            => 12,
+            'large'             => 14,
+            'x-large'           => 18,
+            'xx-large'          => 24,
+        ];
+        if (is_numeric($fontSizeValue) && $fontSizeValue > 7){
+            return $fontSizeValue;
+        } else if (is_numeric($fontSizeValue) && array_key_exists($fontSizeValue, $intValues)){
+            return $intValues[$fontSizeValue];
+        }
+        
+        if (is_string($fontSizeValue) && array_key_exists($fontSizeValue, $stringValues)){
+            return $stringValues[$fontSizeValue];
+        }
+        return 10;
     }
 }
